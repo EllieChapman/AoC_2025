@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 )
 
 // read line by line into memory
@@ -47,29 +48,29 @@ func Check_all() bool {
 
 var suite_passed = true
 
-// func Map[A, B any](as []A, f func(A) B) []B {
-// 	result := make([]B, len(as))
-// 	for i, a := range as {
-// 		result[i] = f(a)
-// 	}
-// 	return result
-// }
+func Map[A, B any](as []A, f func(A) B) []B {
+	result := make([]B, len(as))
+	for i, a := range as {
+		result[i] = f(a)
+	}
+	return result
+}
 
-// func Flatten[A any](as [][]A) []A {
-// 	result := make([]A, 0)
-// 	for _, a := range as {
-// 		result = append(result, a...)
-// 	}
-// 	return result
-// }
+func Flatten[A any](as [][]A) []A {
+	result := make([]A, 0)
+	for _, a := range as {
+		result = append(result, a...)
+	}
+	return result
+}
 
-// func Atoi(s string) int {
-// 	i, err := strconv.Atoi(s)
-// 	if err != nil {
-// 		panic("Tried to convert string '" + s + "' to int")
-// 	}
-// 	return i
-// }
+func Atoi(s string) int {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		panic("Tried to convert string '" + s + "' to int")
+	}
+	return i
+}
 
 // func Sum(s []int) int {
 // 	total := 0
