@@ -58,18 +58,8 @@ func doClick(current int, r rotation) int {
 	}
 
 	// get within 0 to 99 again
-	pos = fixRange(pos)
+	pos = pos % 100
 
-	return pos
-}
-
-func fixRange(pos int) int {
-	for pos > 99 {
-		pos = pos - 100
-	}
-	for pos < 0 {
-		pos = pos + 100
-	}
 	return pos
 }
 
