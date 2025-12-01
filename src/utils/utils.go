@@ -25,14 +25,24 @@ func ReadLines(path string) []string {
 	return lines
 }
 
-func Check_answer[A comparable](ans A, expect A) bool {
+// func Check_answer[A comparable](ans A, expect A) bool {
+// 	if ans == expect {
+// 		fmt.Println("Test Passed")
+// 		return true
+// 	} else {
+// 		fmt.Println("Test Failed, expected:", expect, "received:", ans)
+// 		suite_passed = false
+// 		return false
+// 	}
+// }
+
+func Check_answer[A comparable](ans A, expect A) string {
 	if ans == expect {
-		fmt.Println("Test Passed")
-		return true
+		return "Test Passed"
 	} else {
-		fmt.Println("Test Failed, expected:", expect, "received:", ans)
 		suite_passed = false
-		return false
+		s := fmt.Sprintf("Test Failed, expected: %v, received: %v", expect, ans)
+		return s
 	}
 }
 
