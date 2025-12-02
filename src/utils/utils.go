@@ -82,13 +82,19 @@ func Atoi(s string) int {
 	return i
 }
 
-// func Sum(s []int) int {
-// 	total := 0
-// 	for _, i := range s {
-// 		total += i
-// 	}
-// 	return total
+/// Dont need as no error handling, use directly
+// func Stringify(i int) string {
+// 	s := strconv.Itoa(i)
+// 	return s
 // }
+
+func Sum(s []int) int {
+	total := 0
+	for _, i := range s {
+		total += i
+	}
+	return total
+}
 
 // func Reverse[A any](s []A) []A {
 // 	slices.Reverse(s)
