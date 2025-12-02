@@ -7,6 +7,51 @@ import (
 	"strconv"
 )
 
+type Mode int // Custom type for our enum
+
+const (
+	Real Mode = iota // 0
+	Test             // 1
+	Both             // 2
+)
+
+func Run(f func([]string) int, day string, part string, mode Mode, realExp int, testExp int) {
+	switch mode {
+	case Real:
+		RunReal(f, day, part, realExp)
+	case Test:
+		RunTest(f, day, part, testExp)
+	case Both:
+		RunTest(f, day, part, testExp)
+		RunReal(f, day, part, realExp)
+	default:
+		// Handle unexpected states or provide a default action
+		fmt.Println("unexpected mode", mode)
+	}
+}
+
+func RunReal(f func([]string) int, day string, part string, realExp int) {
+	realInput := GetInput(day, Real)
+	realRes := f(realInput)
+	fmt.Println("Day", day, "Part", part, "(Mode Real):", Check_answer(realRes, realExp))
+}
+
+func RunTest(f func([]string) int, day string, part string, testExp int) {
+	testInput := GetInput(day, Test)
+	testRes := f(testInput)
+	fmt.Println("Day", day, "Part", part, "(Mode Test):", Check_answer(testRes, testExp))
+}
+
+func GetInput(day string, mode Mode) []string {
+	// construct file name
+	filePath := "src/day" + day + "/input.txt"
+	if mode != Real {
+		filePath = "src/day" + day + "/test-input.txt"
+	}
+	// call through to ReadLines
+	return ReadLines(filePath)
+}
+
 // read line by line into memory
 // all file contents is stores in lines[]
 func ReadLines(path string) []string {
@@ -24,17 +69,6 @@ func ReadLines(path string) []string {
 	}
 	return lines
 }
-
-// func Check_answer[A comparable](ans A, expect A) bool {
-// 	if ans == expect {
-// 		fmt.Println("Test Passed")
-// 		return true
-// 	} else {
-// 		fmt.Println("Test Failed, expected:", expect, "received:", ans)
-// 		suite_passed = false
-// 		return false
-// 	}
-// }
 
 func Check_answer[A comparable](ans A, expect A) string {
 	if ans == expect {
@@ -81,12 +115,6 @@ func Atoi(s string) int {
 	}
 	return i
 }
-
-/// Dont need as no error handling, use directly
-// func Stringify(i int) string {
-// 	s := strconv.Itoa(i)
-// 	return s
-// }
 
 func Sum(s []int) int {
 	total := 0

@@ -5,22 +5,16 @@ import (
 	"fmt"
 )
 
-var lines []string = utils.ReadLines("src/day01/input.txt")
-
-func Day1_part1() int {
-
-	rotations := utils.Map(lines, parseLine)
+func Day1_part1(input []string) int {
+	rotations := utils.Map(input, parseLine)
 	positions := doClicks(rotations)
-
 	return countZeros(positions)
 }
 
-func Day1_part2() int {
-
-	rotations := utils.Map(lines, parseLine)
+func Day1_part2(input []string) int {
+	rotations := utils.Map(input, parseLine)
 	oneClickRotations := utils.Flatten(utils.Map(rotations, squash))
 	positions := doClicks(oneClickRotations)
-
 	return countZeros(positions)
 }
 
