@@ -1,4 +1,4 @@
-package day2
+package day3
 
 import (
 	"AoC_2025/src/utils"
