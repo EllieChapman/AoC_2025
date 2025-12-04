@@ -152,6 +152,7 @@ func Map[A, B any](as []A, f func(A) B) []B {
 // 	return result
 // }
 
+// Nb absolutely can fail at runtime
 func MapVariadic[A, B, C any](as []A, f func(A, ...C) B, c_extraArgs ...C) []B {
 	result := make([]B, len(as))
 	for i, a := range as {

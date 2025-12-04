@@ -8,7 +8,7 @@ import (
 
 func Day2_part1(input []string) int {
 	ranges := utils.Map(strings.Split(input[0], ","), parseRangeId)
-	return utils.Sum(utils.Map(ranges, checkRange))
+	return utils.Sum(utils.MapVariadic(ranges, checkRange))
 }
 
 func Day2_part2(input []string) int {
@@ -29,7 +29,7 @@ func parseRangeId(s string) rangeID {
 	}
 }
 
-func checkRange(r rangeID) int {
+func checkRange(r rangeID, _ ...any) int {
 	total := 0
 	for i := r.start; i <= r.end; i++ {
 		total = total + checkID(i)
