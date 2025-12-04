@@ -19,6 +19,16 @@ type coord struct {
 	y int // this in inverted from normal graphs, bigger numbers more down
 }
 
+// func countRemoves(countRemoved int, cs []coord, m map[coord]string) int {
+// 	for _, c := range cs {
+// 		if testCoord(c, m) == 1 {
+// 			m[c] = "."
+// 			return countRemoves(countRemoved+1, cs, m)
+// 		}
+// 	}
+// 	return countRemoved
+// }
+
 func countRemoves(countRemoved int, cs []coord, m map[coord]string) int {
 	removing := []coord{}
 	for _, c := range cs {

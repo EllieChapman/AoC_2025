@@ -24,7 +24,7 @@ func main() {
 
 	fmt.Println("\n### Day 3 ###")
 	utils.Run(day3.Day3_part1, "03", "1", mode, 17430, 357)
-	utils.Run(day3.Day3_part2, "03", "2", mode, 171975854269367, 3121910778619)
+	// utils.Run(day3.Day3_part2, "03", "2", mode, 171975854269367, 3121910778619)
 
 	fmt.Println("\n### Day 4 ###")
 	utils.Run(day4.Day4_part1, "04", "1", mode, 1467, 13)

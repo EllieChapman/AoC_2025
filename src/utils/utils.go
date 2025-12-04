@@ -92,14 +92,6 @@ func Check_all() bool {
 
 var suite_passed = true
 
-func Map[A, B any](as []A, f func(A) B) []B {
-	result := make([]B, len(as))
-	for i, a := range as {
-		result[i] = f(a)
-	}
-	return result
-}
-
 func Flatten[A any](as [][]A) []A {
 	result := make([]A, 0)
 	for _, a := range as {
@@ -135,3 +127,35 @@ func Sum(s []int) int {
 // 	}
 // 	return x - y
 // }
+
+func Map[A, B any](as []A, f func(A) B) []B {
+	result := make([]B, len(as))
+	for i, a := range as {
+		result[i] = f(a)
+	}
+	return result
+}
+
+// func Map2[A, B, C, D any](as []A, f func(A, C, D) B, c C, d D) []B {
+// 	result := make([]B, len(as))
+// 	for i, a := range as {
+// 		result[i] = f(a, c, d)
+// 	}
+// 	return result
+// }
+
+// func Map1[A, B, C any](as []A, f func(A, C) B, c_extraArgs C) []B {
+// 	result := make([]B, len(as))
+// 	for i, a := range as {
+// 		result[i] = f(a, c_extraArgs)
+// 	}
+// 	return result
+// }
+
+func MapVariadic[A, B, C any](as []A, f func(A, ...C) B, c_extraArgs ...C) []B {
+	result := make([]B, len(as))
+	for i, a := range as {
+		result[i] = f(a, c_extraArgs...)
+	}
+	return result
+}
