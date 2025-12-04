@@ -4,6 +4,7 @@ import (
 	day1 "AoC_2025/src/day01"
 	day2 "AoC_2025/src/day02"
 	day3 "AoC_2025/src/day03"
+	day4 "AoC_2025/src/day04"
 	"AoC_2025/src/utils"
 	"fmt"
 )
@@ -24,6 +25,10 @@ func main() {
 	fmt.Println("\n### Day 3 ###")
 	utils.Run(day3.Day3_part1, "03", "1", mode, 17430, 357)
 	utils.Run(day3.Day3_part2, "03", "2", mode, 171975854269367, 3121910778619)
+
+	fmt.Println("\n### Day 4 ###")
+	utils.Run(day4.Day4_part1, "04", "1", mode, 1467, 13)
+	utils.Run(day4.Day4_part2, "04", "2", mode, 8484, 43)
 
 	utils.Check_all()
 }
