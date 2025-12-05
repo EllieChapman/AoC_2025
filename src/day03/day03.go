@@ -1,22 +1,20 @@
-package day3
+package day03
 
 import (
 	"AoC_2025/src/utils"
-	"fmt"
 	"strconv"
 	"strings"
 )
 
 func Day3_part1(input []string) int {
 	banks := utils.Map(input, func(bank string) []int { return utils.Map(strings.Split(bank, ""), utils.Atoi) })
-	joltages := utils.MapVariadic(banks, getMaxJoltageN, 2, "0") // Nb should both be ints, but wanted to prove MapVaridic capabilities
+	joltages := utils.MapV(banks, getMaxJoltageN, 2, "0") // Nb should both be ints, but wanted to prove MapVaridic capabilities
 	return utils.Sum(joltages)
 }
 
 func Day3_part2(input []string) int {
 	banks := utils.Map(input, func(bank string) []int { return utils.Map(strings.Split(bank, ""), utils.Atoi) })
-	joltages := utils.MapVariadic(banks, getMaxJoltageN, 12, "0")
-	fmt.Println()
+	joltages := utils.MapV(banks, getMaxJoltageN, 12, "0")
 	return utils.Sum(joltages)
 }
 

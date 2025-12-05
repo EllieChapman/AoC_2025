@@ -128,14 +128,6 @@ func Sum(s []int) int {
 // 	return x - y
 // }
 
-func Map[A, B any](as []A, f func(A) B) []B {
-	result := make([]B, len(as))
-	for i, a := range as {
-		result[i] = f(a)
-	}
-	return result
-}
-
 // func Map2[A, B, C, D any](as []A, f func(A, C, D) B, c C, d D) []B {
 // 	result := make([]B, len(as))
 // 	for i, a := range as {
@@ -152,11 +144,43 @@ func Map[A, B any](as []A, f func(A) B) []B {
 // 	return result
 // }
 
+func Map[A, B any](as []A, f func(A) B) []B {
+	result := make([]B, len(as))
+	for i, a := range as {
+		result[i] = f(a)
+	}
+	return result
+}
+
 // Nb absolutely can fail at runtime
-func MapVariadic[A, B, C any](as []A, f func(A, ...C) B, c_extraArgs ...C) []B {
+func MapV[A, B, C any](as []A, f func(A, ...C) B, c_extraArgs ...C) []B {
 	result := make([]B, len(as))
 	for i, a := range as {
 		result[i] = f(a, c_extraArgs...)
 	}
 	return result
 }
+
+// func MapEither[A, B, C any](as []A, function interface{}, c_extraArgs ...C) []B {
+// 	switch function.(type) {
+// 	case func(A) B:
+// 		// return nil
+// 		return Map(as, function.(func(A) B))
+// 	case func(A, ...C) B:
+// 		// return nil
+// 		return MapV(as, function.(func(A, ...C) B), c_extraArgs...)
+// 	default:
+// 		panic("Received an unknown type")
+// 	}
+// }
+
+// func processAny(data interface{}) {
+// 	switch v := data.(type) {
+// 	case int:
+// 		fmt.Printf("Received an int: %d\n", v)
+// 	case string:
+// 		fmt.Printf("Received a string: %s\n", v)
+// 	default:
+// 		fmt.Printf("Received an unknown type: %T\n", v)
+// 	}
+// }
