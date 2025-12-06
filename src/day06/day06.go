@@ -6,52 +6,32 @@ import (
 )
 
 func Day6_part1(input []string) int {
-	sums := utils.Transpose(utils.Map(input, strings.Fields))
+	sums := utils.Map(utils.Transpose(utils.Map(input, strings.Fields)), func(ss []string) sum { return sum{ss[len(ss)-1], utils.Map(ss[0:len(ss)-1], utils.Atoi)} })
 	return utils.Sum(utils.Map(sums, doSum))
 }
 
 func Day6_part2(input []string) int {
 	transposed := utils.Transpose(utils.Map(input[0:len(input)-1], func(s string) []string { return strings.Split(s, "") }))
-	sums := extract(transposed, strings.Fields(input[len(input)-1]))
+	joined := utils.Map(transposed, myJoin)
+	ops := strings.Fields(input[len(input)-1])
+	sums := parseRec(joined, ops, []sum{})
 	return utils.Sum(utils.Map(sums, doSum))
 }
 
-func doSum(sum []string) int {
-	nums := utils.Map(sum[0:len(sum)-1], utils.Atoi)
-	op := sum[len(sum)-1]
-	switch op {
+type sum struct {
+	op   string
+	nums []int
+}
+
+func doSum(s sum) int {
+	switch s.op {
 	case "+":
-		return utils.Sum(nums)
+		return utils.Sum(s.nums)
 	case "*":
-		return utils.Mul(nums)
+		return utils.Mul(s.nums)
 	default:
 		panic("unexpected operator:")
 	}
-}
-
-// [[1    ] [2 4  ] [3 5 6] [     ] [3 6 9] [2 4 8] [8    ] [     ] [  3 2] [5 8 1] [1 7 5] [     ] [6 2 3] [4 3 1] [    4]]
-// ->
-func extract(ss [][]string, ops []string) [][]string {
-	newss := utils.Map(ss, func(s []string) string { return myJoin(s) })
-	res := [][]string{}
-	outer := 0
-	for _, s := range newss {
-		words := strings.Fields(s)
-		if len(words) == 0 {
-			outer++
-		}
-		if len(words) == 1 {
-			if outer >= len(res) {
-				res = append(res, []string{})
-				res[outer] = append(res[outer], ops[outer])
-			}
-			res[outer] = append(res[outer], s)
-		}
-		if len(words) > 1 {
-			panic("here")
-		}
-	}
-	return utils.Map(res, utils.Reverse)
 }
 
 func myJoin(ss []string) string {
@@ -62,4 +42,17 @@ func myJoin(ss []string) string {
 		}
 	}
 	return res
+}
+
+func parseRec(ss []string, ops []string, sums []sum) []sum {
+	newSum := sum{ops[0], []int{}}
+	for pos, s := range ss {
+		if s == "" {
+			sums = append(sums, newSum)
+			return parseRec(ss[pos+1:], ops[1:], sums)
+		} else {
+			newSum.nums = append(newSum.nums, utils.Atoi(s))
+		}
+	}
+	return append(sums, newSum)
 }
