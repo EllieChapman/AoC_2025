@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 )
 
@@ -116,10 +117,18 @@ func Sum(s []int) int {
 	return total
 }
 
-// func Reverse[A any](s []A) []A {
-// 	slices.Reverse(s)
-// 	return s
-// }
+func Mul(s []int) int {
+	total := 1
+	for _, i := range s {
+		total *= i
+	}
+	return total
+}
+
+func Reverse[A any](s []A) []A {
+	slices.Reverse(s)
+	return s
+}
 
 // func AbsDiffInt(x, y int) int {
 // 	if x < y {
@@ -184,3 +193,24 @@ func MapV[A, B, C any](as []A, f func(A, ...C) B, c_extraArgs ...C) []B {
 // 		fmt.Printf("Received an unknown type: %T\n", v)
 // 	}
 // }
+
+// [ 1 2 3 ]
+// [ 4 5 6 ]
+// ->
+// [ 1 4 ]
+// [ 2 5 ]
+// [ 3 6 ]
+func Transpose[A any](aas [][]A) [][]A {
+	res := [][]A{}
+
+	for outerPos, _ := range aas {
+		for innerPos, value := range aas[outerPos] {
+			if len(res) <= innerPos {
+				res = append(res, []A{})
+			}
+			res[innerPos] = append(res[innerPos], value)
+		}
+	}
+
+	return res
+}

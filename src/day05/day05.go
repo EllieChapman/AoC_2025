@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-// "AoC_2025/src/utils"
-
 func Day5_part1(input []string) int {
 	ranges, ids := parse(input)
 	// utils.MapV(ids, checkId, ranges) // Why didn't it like [rangeID] as C?
