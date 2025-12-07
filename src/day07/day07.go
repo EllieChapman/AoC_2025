@@ -24,22 +24,10 @@ func apply(currentBeamsPos map[int]int, row []string) (map[int]int, int) {
 	for beamPosKey, numBeamsInPos := range currentBeamsPos {
 		if row[beamPosKey] == "^" {
 			numSplit++
-			if _, ok := newBeamsPos[beamPosKey-1]; ok {
-				newBeamsPos[beamPosKey-1] = newBeamsPos[beamPosKey-1] + numBeamsInPos
-			} else {
-				newBeamsPos[beamPosKey-1] = numBeamsInPos
-			}
-			if _, ok := newBeamsPos[beamPosKey+1]; ok {
-				newBeamsPos[beamPosKey+1] = newBeamsPos[beamPosKey+1] + numBeamsInPos
-			} else {
-				newBeamsPos[beamPosKey+1] = numBeamsInPos
-			}
+			newBeamsPos = addToMap(newBeamsPos, beamPosKey-1, numBeamsInPos)
+			newBeamsPos = addToMap(newBeamsPos, beamPosKey+1, numBeamsInPos)
 		} else {
-			if _, ok := newBeamsPos[beamPosKey]; ok {
-				newBeamsPos[beamPosKey] = newBeamsPos[beamPosKey] + numBeamsInPos
-			} else {
-				newBeamsPos[beamPosKey] = numBeamsInPos
-			}
+			newBeamsPos = addToMap(newBeamsPos, beamPosKey, numBeamsInPos)
 		}
 	}
 	return newBeamsPos, numSplit
@@ -71,4 +59,13 @@ func sumMap(m map[int]int) int {
 		total += value
 	}
 	return total
+}
+
+func addToMap(m map[int]int, key int, value int) map[int]int {
+	if _, ok := m[key]; ok {
+		m[key] = m[key] + value
+	} else {
+		m[key] = value
+	}
+	return m
 }
