@@ -9,11 +9,12 @@ import (
 	"AoC_2025/src/day06"
 	"AoC_2025/src/day07"
 	"AoC_2025/src/day08"
+	"AoC_2025/src/day09"
 	"AoC_2025/src/utils"
 	"fmt"
 )
 
-var mode utils.Mode = utils.Both // Can be Real, Test, or Both
+var mode utils.Mode = utils.Test // Can be Real, Test, or Both
 
 func main() {
 	fmt.Println("Starting tests")
@@ -49,6 +50,11 @@ func main() {
 	fmt.Println("\n### Day 8 ###")
 	utils.Run(day08.Day8_part1, "08", "1", mode, 131150, 40)
 	utils.Run(day08.Day8_part2, "08", "2", mode, 2497445, 25272)
+
+	fmt.Println("\n### Day 9 ###")
+	utils.Run(day09.Day9_part1, "09", "1", mode, 4771508457, 50)
+	utils.Run(day09.Day9_part2, "09", "2", utils.Test, 0, 24) // part 2 is too slow for the real data
+	utils.Run(day09.Day9_part2try4, "09", "3", mode, 0, 24)
 
 	utils.Check_all()
 }

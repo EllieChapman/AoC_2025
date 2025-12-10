@@ -130,12 +130,12 @@ func Reverse[A any](s []A) []A {
 	return s
 }
 
-// func AbsDiffInt(x, y int) int {
-// 	if x < y {
-// 		return y - x
-// 	}
-// 	return x - y
-// }
+func AbsDiffInt(x, y int) int {
+	if x < y {
+		return y - x
+	}
+	return x - y
+}
 
 // func Map2[A, B, C, D any](as []A, f func(A, C, D) B, c C, d D) []B {
 // 	result := make([]B, len(as))
