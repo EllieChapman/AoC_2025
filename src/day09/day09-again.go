@@ -4,6 +4,7 @@ import (
 	"AoC_2025/src/utils"
 	"fmt"
 	"slices"
+	"sort"
 )
 
 func Day9_part2try4(input []string) int {
@@ -138,14 +139,61 @@ func createNewSegements(left, top, right segment, intersecting []segment) ([]seg
 func makeTopSegments(newTopY, lx, rx int, intersecting []segment) []segment {
 	// EBC todo need to deal with whiole intersect. Intersect includes end coords, but we dont pick up unless one end is wholy within range being considered
 	intersectingCoords := getIntersectingXs(intersecting)
-	return makeTops(newTopY, lx, rx, intersectingCoords)
-}
+	// intersects := order(intersecting)
 
-func makeTops(newTopY, lx, rx int, intersectXs map[int]bool) []segment {
 	if lx > rx {
 		lx, rx = rx, lx
 	}
-	return findNextTop(lx, rx, newTopY, intersectXs, []segment{})
+	return findNextTop(lx, rx, newTopY, intersectingCoords, []segment{})
+}
+
+func order(intersecting []segment) []segment {
+	new := []segment{}
+	for _, i := range intersecting {
+		internallyOrdered := i.order()
+		new = append(new, internallyOrdered)
+	}
+	return intersectSort(new)
+}
+
+func intersectSort(ls []segment) []segment {
+	sort.Slice(ls, func(i, j int) bool {
+		return ls[i].start.x < ls[j].end.x
+	})
+	return ls
+}
+
+// need interscets to be ordered in list, and start and end for each to be ordered
+func findNextTopFast(lx, rx, ytop int, orderedIntersects []segment, accTops []segment) []segment {
+	fmt.Println("findNextTopFast", lx, rx, ytop)
+
+	if len(orderedIntersects) == 0 {
+		return append(accTops, segment{coord{lx, ytop}, coord{rx, ytop}, -1, ytop})
+	}
+	if lx > rx {
+		panic("lx bigger")
+	}
+	nextIntersectX := orderedIntersects[0].start.x
+	endOfNextIntersect := orderedIntersects[0].end.x
+
+	// if lx == nextIntersectX {
+	// 	// recurse, did not make any
+	// 	return findNextTopFast(endOfNextIntersect, rx, ytop, orderedIntersects[1:], accTops)
+	// }
+	if lx+1 != nextIntersectX {
+		// recurse, found a chunk before next intersect
+		newS := segment{coord{lx, ytop}, coord{nextIntersectX, ytop}, -1, ytop}
+		return findNextTopFast(endOfNextIntersect, rx, ytop, orderedIntersects[1:], append(accTops, newS))
+	}
+	// send of previosu intersect immedietaly abuts next one, no intersect
+	return findNextTopFast(endOfNextIntersect, rx, ytop, orderedIntersects[1:], accTops)
+}
+
+func (s segment) order() segment {
+	if s.start.x < s.end.x {
+		return s
+	}
+	return segment{s.end, s.start, s.lineX, s.lineY}
 }
 
 // EBC todo This is just too slow for main, going one by one. Could jump by more if has ordered intersect ranges instead
@@ -200,31 +248,6 @@ func findIntersecting(top, left, right segment, segments map[segment]int) []segm
 				if k.getHorizontalLinePos() == y {
 					if k != top {
 						if k.start.x > lx && k.start.x < rx || k.end.x > lx && k.end.x < rx || k.start.x == lx && k.end.x == rx || k.start.x == rx && k.end.x == lx {
-							res = append(res, k)
-							res = append(res, segment{k.end, k.start, k.lineX, k.lineY})
-						}
-					}
-				}
-			}
-		}
-	}
-	return res
-}
-
-// needs to walk down from starting top y, between l and r, find first y that has intersect or pass min or leeft and rigth downness
-func findIntersectingWide(top, left, right segment, segments map[segment]int) []segment {
-	res := []segment{}
-	lx := left.start.x
-	rx := right.end.x
-	if lx > rx {
-		lx, rx = rx, lx
-	}
-	for y := top.start.y; y <= slices.Min([]int{left.start.y, right.end.y}); y++ {
-		for k, _ := range segments {
-			if k.isHorizontal() {
-				if k.getHorizontalLinePos() == y {
-					if k != top {
-						if k.start.x >= lx && k.start.x <= rx || k.end.x >= lx && k.end.x <= rx {
 							res = append(res, k)
 							res = append(res, segment{k.end, k.start, k.lineX, k.lineY})
 						}
