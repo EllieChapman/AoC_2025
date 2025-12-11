@@ -10,11 +10,11 @@ import (
 func Day9_part2try4(input []string) int {
 	coords := utils.Map(input, parse)
 	descendingRecatanglesToCheck := rectangleSort(getRectangles(coords))
-	fmt.Println(len(descendingRecatanglesToCheck)) // 28 pairwise checks, good (8*7)/2
+	fmt.Println("to check", len(descendingRecatanglesToCheck)) // 28 pairwise checks, good (8*7)/2
 	segments := parseSegements(coords)
 	rs := loop(segments, []rectangle{})
-	fmt.Println("[{{7 1} {11 3} 0} {{2 3} {11 5} 0} {{9 5} {11 7} 0}]")
-	fmt.Println(rs)
+	// fmt.Println("[{{7 1} {11 3} 0} {{2 3} {11 5} 0} {{9 5} {11 7} 0}]")
+	// fmt.Println(rs)
 	r := getLargestPossibleRectangle3(descendingRecatanglesToCheck, rs)
 	return r.area
 }
@@ -27,9 +27,10 @@ func loop(segs map[segment]int, accRec []rectangle) []rectangle {
 	topS := findTopHorizontal(segs)
 	left, right := findTopBars(topS, segs)
 	intersecting := findIntersecting(topS, left, right, segs)
-	// fmt.Println("intersecting", intersecting)
-	// fmt.Println(left, topS, right)
+	fmt.Println("intersecting", intersecting)
+	fmt.Println(left, topS, right)
 	// fmt.Println("looping, before call removeChunk, len(egs):", len(segs), segs)
+	fmt.Println("len segs befroe remove", len(segs)) // for main len seg gets stuck at 39, why?
 	newsegs, removedInsideChunk := removeChunk(left, topS, right, segs, intersecting)
 	accRec = append(accRec, removedInsideChunk)
 	if len(newsegs) == 0 {
@@ -55,7 +56,10 @@ func orderSegMap(m map[segment]int) map[segment]int {
 }
 
 func getLargestPossibleRectangle3(toCheckrs []rectangle, safeRS []rectangle) rectangle {
-	for _, r := range toCheckrs {
+	for pos, r := range toCheckrs {
+		if pos%100 == 0 {
+			fmt.Println(len(toCheckrs) - pos)
+		}
 		// once fix updating red green, also fix outside updating rather than starting empty for eahc rectangle
 		if isRectanglePossibleNew(r, safeRS) {
 			return r
@@ -265,6 +269,9 @@ func findIntersecting(top, left, right segment, segments map[segment]int) []segm
 		lx, rx = rx, lx
 	}
 	for y := top.start.y; y <= slices.Min([]int{left.start.y, right.end.y}); y++ {
+		if len(res) > 0 {
+			return res
+		}
 		for k, _ := range segments {
 			if k.isHorizontal() {
 				if k.getHorizontalLinePos() == y {
@@ -386,6 +393,13 @@ func findTopBars(top segment, segments map[segment]int) (segment, segment) {
 				right = k.reverse()
 			}
 		}
+	}
+	if left.end.x == 0 || right.end.x == 0 {
+		fmt.Println("left", left)
+		fmt.Println("top", top)
+		fmt.Println("right", right)
+		fmt.Println("segs", segments)
+		panic("bad, l/r is not filled in")
 	}
 	return left, right
 }

@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-var mode utils.Mode = utils.Test // Can be Real, Test, or Both
+var mode utils.Mode = utils.Both // Can be Real, Test, or Both
 
 func main() {
 	fmt.Println("Starting tests")
@@ -46,7 +46,7 @@ func main() {
 	fmt.Println("\n### Day 9 ###")
 	// utils.Run(day09.Day9_part1, "09", "1", mode, 4771508457, 50)
 	// utils.Run(day09.Day9_part2, "09", "2", utils.Test, 0, 24) // part 2 is too slow for the real data
-	utils.Run(day09.Day9_part2try4, "09", "3", mode, 0, 24)
+	utils.Run(day09.Day9_part2try4, "09", "3", mode, 1539809693, 24) // ~takes 15 mins. Had between 73500 and 73600 (out of 122760) left to check when found
 
 	utils.Check_all()
 }
