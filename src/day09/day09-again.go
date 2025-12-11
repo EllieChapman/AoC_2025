@@ -46,29 +46,12 @@ func orderSegMap(m map[segment]int) map[segment]int {
 }
 
 func getLargestPossibleRectangle3(toCheckrs []rectangle, safeRS []rectangle) rectangle {
-	for _, r := range toCheckrs[0:] { // TODO remove startPos hack once isRectanglePossible is faster. Start just before where it is.
+	for _, r := range toCheckrs[0:] {
 		if isRectanglePossibleFast(r, safeRS) {
 			return r
 		}
 	}
 	panic("none possible")
-}
-
-// TODO - this is the slow part. Generating safeRS is fast, checking test rectangles is not. Need to check segments, not each point separately.
-// ?? is it true that for each of 4 test rec segement, each segemnt must be is entriely cotained in a single safe chunk? no
-func isRectanglePossible(r rectangle, safeRS []rectangle) bool {
-	c1 := coord{r.a.x, r.a.y}
-	c2 := coord{r.a.x, r.b.y}
-	c3 := coord{r.b.x, r.b.y}
-	c4 := coord{r.b.x, r.a.y}
-	greenLineCoords := slices.Concat(getLineCoords(c1, c2), getLineCoords(c2, c3), getLineCoords(c3, c4), getLineCoords(c4, c1))
-	for _, c := range greenLineCoords {
-		coordOk := checkIfCoordIsOk(c, safeRS)
-		if !coordOk {
-			return false
-		}
-	}
-	return true
 }
 
 // needs to check segments, not coords
@@ -79,39 +62,14 @@ func isRectanglePossibleFast(r rectangle, safeRS []rectangle) bool {
 	c4 := coord{r.b.x, r.a.y}
 	segsToCheck := []segment{makeSegment(c1, c2), makeSegment(c2, c3), makeSegment(c3, c4), makeSegment(c4, c1)}
 	for _, seg := range segsToCheck {
-		// if !isSegInside(seg.order(), safeRS) {
-		if !isSegInside2([]segment{seg.order()}, safeRS) {
+		if !isSegInside([]segment{seg.order()}, safeRS) {
 			return false
 		}
 	}
 	return true
 }
 
-// recusrse, chunking segment each time
-func isSegInside(s segment, safeRS []rectangle) bool {
-	// define recatbgle.contains, this returns false is none of segemnt is in it, or true plus a list of remsaiming segment parts needed to be tested. either 0, 1 or 2
-	// try recatbgle.contains for each safeRS. is false, just continue. If true, recurse isSegInside for each returned segeent. If any of them return flase, false. Else true
-	// if out of rectangles, false
-	for _, r := range safeRS {
-		someContained, newSegs := r.containsSeg(s)
-		if someContained {
-			// recvatngle contained at least part of the range
-			if len(newSegs) == 0 {
-				return true // all of orgianl segment was in rectangle, so done
-			} else {
-				for _, newS := range newSegs {
-					isInside := isSegInside(newS.order(), safeRS)
-					if !isInside {
-						return false // if any of segment fragements don't fit, overall seg didn't either
-					}
-				}
-			}
-		}
-	}
-	return false // run out of safe rectabgles but still have a segment to fit
-}
-
-func isSegInside2(fragmentsToCheck []segment, safeRS []rectangle) bool {
+func isSegInside(fragmentsToCheck []segment, safeRS []rectangle) bool {
 	for _, r := range safeRS {
 		newFrags := []segment{}
 		for _, f := range fragmentsToCheck {
@@ -218,15 +176,6 @@ func compareRanges(test1, test2, parent1, parent2 int) (bool, []oneDRange) {
 		return true, []oneDRange{{parent2 + 1, test2}, {test1, parent1 - 1}}
 	}
 	panic("another case didnt consider")
-}
-
-func checkIfCoordIsOk(c coord, safeRS []rectangle) bool {
-	for _, r := range safeRS {
-		if r.contains(c) {
-			return true
-		}
-	}
-	return false
 }
 
 // Easy mode (intersecting empty):
@@ -513,21 +462,4 @@ func makeSegment(c1 coord, c2 coord) segment {
 		return segment{c1, c2, -1, c1.y}.order()
 	}
 	panic("tryign to create segment from 2 coords which share neitehr x nor y")
-}
-
-func (r rectangle) contains(c coord) bool {
-	leftLimit := r.a.x
-	rightLimit := r.b.x
-	if leftLimit > rightLimit {
-		leftLimit, rightLimit = rightLimit, leftLimit
-	}
-	upLimit := r.a.y
-	downLimit := r.b.y
-	if upLimit > downLimit {
-		upLimit, downLimit = downLimit, upLimit
-	}
-	if c.x >= leftLimit && c.x <= rightLimit && c.y >= upLimit && c.y <= downLimit {
-		return true
-	}
-	return false
 }
