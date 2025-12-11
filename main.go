@@ -53,7 +53,7 @@ func main() {
 
 	fmt.Println("\n### Day 9 ###")
 	utils.Run(day09.Day9_part1, "09", "1", mode, 4771508457, 50)
-	utils.Run(day09.Day9_part2try4, "09", "3", mode, 1539809693, 24) // ~takes 15 mins. Had between 73500 and 73600 (out of 122760) left to check when found
+	utils.Run(day09.Day9_part2, "09", "2", mode, 1539809693, 24) // ~takes 15 mins. Had between 73500 and 73600 (out of 122760) left to check when found
 
 	utils.Check_all()
 }

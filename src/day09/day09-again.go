@@ -7,12 +7,13 @@ import (
 	"sort"
 )
 
-func Day9_part2try4(input []string) int {
+func Day9_part2(input []string) int {
 	coords := utils.Map(input, parse)
 	descendingRecatanglesToCheck := rectangleSort(getRectangles(coords))
 	segments := parseSegements(coords)
-	rs := loop(segments, []rectangle{})
-	r := getLargestPossibleRectangle3(descendingRecatanglesToCheck, rs)
+	safeChunks := loop(segments, []rectangle{})
+	// descendingSafeChunks := rectangleSort(safeChunks)
+	r := getLargestPossibleRectangle3(descendingRecatanglesToCheck, safeChunks)
 	return r.area
 }
 
@@ -51,12 +52,11 @@ func getLargestPossibleRectangle3(toCheckrs []rectangle, safeRS []rectangle) rec
 	if len(toCheckrs) != 28 {
 		startPos = 49000
 	}
-	for pos, r := range toCheckrs[startPos:] { // TODO remove startPos hack once isRectanglePossibleNew is faster. Start just before where it is.
+	for pos, r := range toCheckrs[startPos:] { // TODO remove startPos hack once isRectanglePossible is faster. Start just before where it is.
 		if pos%100 == 0 {
 			fmt.Println(len(toCheckrs) - pos)
 		}
-		// once fix updating red green, also fix outside updating rather than starting empty for eahc rectangle
-		if isRectanglePossibleNew(r, safeRS) {
+		if isRectanglePossible(r, safeRS) {
 			return r
 		}
 	}
@@ -64,7 +64,8 @@ func getLargestPossibleRectangle3(toCheckrs []rectangle, safeRS []rectangle) rec
 }
 
 // TODO - this is the slow part. Generating safeRS is fast, checking test rectangles is not. Need to check segments, not each point separately.
-func isRectanglePossibleNew(r rectangle, safeRS []rectangle) bool {
+// ?? is it true that for each of 4 test rec segement, each segemnt must be is entriely cotained in a single safe chunk? no
+func isRectanglePossible(r rectangle, safeRS []rectangle) bool {
 	c1 := coord{r.a.x, r.a.y}
 	c2 := coord{r.a.x, r.b.y}
 	c3 := coord{r.b.x, r.b.y}
@@ -78,6 +79,17 @@ func isRectanglePossibleNew(r rectangle, safeRS []rectangle) bool {
 	}
 	return true
 }
+
+// needs to check segments, not coords
+// func isRectanglePossibleFast(r rectangle, safeRS []rectangle) bool {
+// 	c1 := coord{r.a.x, r.a.y}
+// 	c2 := coord{r.a.x, r.b.y}
+// 	c3 := coord{r.b.x, r.b.y}
+// 	c4 := coord{r.b.x, r.a.y}
+// 	segsToCheck := []segement{makeSegment(c1, c2), makeSegment(c2, c3), makeSegment(c3, c4), makeSegment(c4, c1)}
+
+// 	return true
+// }
 
 func checkIfCoordIsOk(c coord, safeRS []rectangle) bool {
 	for _, r := range safeRS {
@@ -139,7 +151,7 @@ func createNewSegements(left, top, right segment, intersecting []segment) ([]seg
 	newTopSegments := makeTopSegments(newTopY, lx, rx, intersecting)
 
 	newSegments = slices.Concat(newSegments, newTopSegments)
-	rectangle := rectangle{top.start, coord{rx, newTopY}, 0}
+	rectangle := calcRectangleSize(top.start, coord{rx, newTopY})
 
 	leftRightSegs := makeLeftRigthSegments(left, right, newTopY)
 	newSegments = slices.Concat(newSegments, leftRightSegs)
@@ -148,14 +160,11 @@ func createNewSegements(left, top, right segment, intersecting []segment) ([]seg
 }
 
 func makeTopSegments(newTopY, lx, rx int, intersecting []segment) []segment {
-	// EBC todo need to deal with whiole intersect. Intersect includes end coords, but we dont pick up unless one end is wholy within range being considered
-	// intersectingCoords := getIntersectingXs(intersecting)
 	intersects := order(intersecting)
 
 	if lx > rx {
 		lx, rx = rx, lx
 	}
-	// return findNextTop(lx, rx, newTopY, intersectingCoords, []segment{})
 	return findNextTopFast(lx, rx, newTopY, intersects, []segment{})
 }
 
@@ -178,7 +187,7 @@ func intersectSort(ls []segment) []segment {
 func findNextTopFast(lx, rx, ytop int, orderedIntersects []segment, accTops []segment) []segment {
 	if len(orderedIntersects) == 0 {
 		if lx < rx {
-			return append(accTops, segment{coord{lx, ytop}, coord{rx, ytop}, -1, ytop})
+			return append(accTops, makeSegment(coord{lx, ytop}, coord{rx, ytop}))
 		} else {
 			return accTops
 		}
@@ -195,22 +204,11 @@ func findNextTopFast(lx, rx, ytop int, orderedIntersects []segment, accTops []se
 	}
 	if lx+1 != nextIntersectX {
 		// recurse, found a chunk before next intersect
-		newS := segment{coord{lx, ytop}, coord{nextIntersectX, ytop}, -1, ytop}
+		newS := makeSegment(coord{lx, ytop}, coord{nextIntersectX, ytop})
 		return findNextTopFast(endOfNextIntersect, rx, ytop, orderedIntersects[1:], append(accTops, newS))
 	}
-	// send of previosu intersect immedietaly abuts next one, no intersect
+	// end of previosu intersect immedietaly abuts next one, no intersect
 	return findNextTopFast(endOfNextIntersect, rx, ytop, orderedIntersects[1:], accTops)
-}
-
-func (s segment) order() segment {
-	if s.start.x < s.end.x {
-		return s
-	}
-	return segment{s.end, s.start, s.lineX, s.lineY}
-}
-
-func (s segment) reverse() segment {
-	return segment{s.end, s.start, s.lineX, s.lineY}
 }
 
 // return segements (interalluy ordered) if one end is within, or is exact wodth of lx and rx
@@ -232,7 +230,6 @@ func findIntersecting(top, left, right segment, segments map[segment]int) []segm
 					if k != top {
 						if k.start.x > lx && k.start.x < rx || k.end.x > lx && k.end.x < rx || k.start.x == lx && k.end.x == rx || k.start.x == rx && k.end.x == lx {
 							res = append(res, k.order())
-							// res = append(res, segment{k.end, k.start, k.lineX, k.lineY})
 						}
 					}
 				}
@@ -246,10 +243,10 @@ func makeLeftRigthSegments(left, right segment, newTopY int) []segment {
 	// if l/r bar origianlly descends past the newY, then need to create the section of line starting at newY and going down to whre bar origianlly ended
 	segments := []segment{}
 	if left.start.y > newTopY {
-		segments = append(segments, segment{left.start, coord{left.start.x, newTopY}, left.start.x, -1})
+		segments = append(segments, makeSegment(left.start, coord{left.start.x, newTopY}))
 	}
 	if right.end.y > newTopY {
-		segments = append(segments, segment{coord{right.start.x, newTopY}, right.end, right.start.x, -1})
+		segments = append(segments, makeSegment(coord{right.start.x, newTopY}, right.end))
 	}
 	return segments
 }
@@ -273,13 +270,13 @@ func mergeHorizontals(segs map[segment]int) map[segment]int {
 					// merge
 					delete(segs, k1)
 					delete(segs, k2)
-					newS := segment{k2.start, k1.end, -1, k1.getHorizontalLinePos()}
+					newS := makeSegment(k2.start, k1.end)
 					segs[newS] = 1
 				}
 				if k1.end == k2.start {
 					delete(segs, k1)
 					delete(segs, k2)
-					newS := segment{k1.start, k2.end, -1, k2.getHorizontalLinePos()}
+					newS := makeSegment(k1.start, k2.end)
 					segs[newS] = 1
 				}
 			}
@@ -295,7 +292,7 @@ func parseSegements(cs []coord) map[segment]int {
 		if i == len(cs)-1 {
 			j = 0
 		}
-		newS := segment{cs[i], cs[j], -1, -1}
+		newS := makeSegment(cs[i], cs[j])
 		if cs[i].y == cs[j].y {
 			newS.lineY = cs[i].y
 		}
@@ -323,8 +320,6 @@ func findTopHorizontal(segments map[segment]int) segment {
 	return highest
 }
 
-// ebc directionality might become a problem. ie might have two bars that connect via their ends. but code above needs left and right with start and end as expected
-// if k.start = top.start for exmaple, need to reverse k before set as left. prints for now
 func findTopBars(top segment, segments map[segment]int) (segment, segment) {
 	var left segment
 	var right segment
@@ -366,6 +361,30 @@ func (s segment) isVertical() bool {
 func (s segment) isHorizontal() bool {
 	return s.lineY != -1
 }
+
+func (s segment) order() segment {
+	if s.start.x < s.end.x {
+		return s
+	}
+	return s.reverse()
+}
+
+func (s segment) reverse() segment {
+	return makeSegment(s.end, s.start)
+}
+
+func makeSegment(c1 coord, c2 coord) segment {
+	if c1.x == c2.x {
+		// vertical seg
+		return segment{c1, c2, c1.x, -1}
+	}
+	if c1.y == c2.y {
+		// horizotnal seg
+		return segment{c1, c2, -1, c1.y}.order()
+	}
+	panic("tryign to create segment from 2 coords which share neitehr x nor y")
+}
+
 func (r rectangle) contains(c coord) bool {
 	leftLimit := r.a.x
 	rightLimit := r.b.x
