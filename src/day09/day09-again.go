@@ -2,7 +2,6 @@ package day09
 
 import (
 	"AoC_2025/src/utils"
-	"fmt"
 	"slices"
 	"sort"
 )
@@ -47,16 +46,8 @@ func orderSegMap(m map[segment]int) map[segment]int {
 }
 
 func getLargestPossibleRectangle3(toCheckrs []rectangle, safeRS []rectangle) rectangle {
-	// for pos, r := range toCheckrs {
-	startPos := 0
-	if len(toCheckrs) != 28 {
-		startPos = 49000
-	}
-	for pos, r := range toCheckrs[startPos:] { // TODO remove startPos hack once isRectanglePossible is faster. Start just before where it is.
-		if pos%100 == 0 {
-			fmt.Println(len(toCheckrs) - pos)
-		}
-		if isRectanglePossible(r, safeRS) {
+	for _, r := range toCheckrs[0:] { // TODO remove startPos hack once isRectanglePossible is faster. Start just before where it is.
+		if isRectanglePossibleFast(r, safeRS) {
 			return r
 		}
 	}
@@ -81,15 +72,153 @@ func isRectanglePossible(r rectangle, safeRS []rectangle) bool {
 }
 
 // needs to check segments, not coords
-// func isRectanglePossibleFast(r rectangle, safeRS []rectangle) bool {
-// 	c1 := coord{r.a.x, r.a.y}
-// 	c2 := coord{r.a.x, r.b.y}
-// 	c3 := coord{r.b.x, r.b.y}
-// 	c4 := coord{r.b.x, r.a.y}
-// 	segsToCheck := []segement{makeSegment(c1, c2), makeSegment(c2, c3), makeSegment(c3, c4), makeSegment(c4, c1)}
+func isRectanglePossibleFast(r rectangle, safeRS []rectangle) bool {
+	c1 := coord{r.a.x, r.a.y}
+	c2 := coord{r.a.x, r.b.y}
+	c3 := coord{r.b.x, r.b.y}
+	c4 := coord{r.b.x, r.a.y}
+	segsToCheck := []segment{makeSegment(c1, c2), makeSegment(c2, c3), makeSegment(c3, c4), makeSegment(c4, c1)}
+	for _, seg := range segsToCheck {
+		// if !isSegInside(seg.order(), safeRS) {
+		if !isSegInside2([]segment{seg.order()}, safeRS) {
+			return false
+		}
+	}
+	return true
+}
 
-// 	return true
-// }
+// recusrse, chunking segment each time
+func isSegInside(s segment, safeRS []rectangle) bool {
+	// define recatbgle.contains, this returns false is none of segemnt is in it, or true plus a list of remsaiming segment parts needed to be tested. either 0, 1 or 2
+	// try recatbgle.contains for each safeRS. is false, just continue. If true, recurse isSegInside for each returned segeent. If any of them return flase, false. Else true
+	// if out of rectangles, false
+	for _, r := range safeRS {
+		someContained, newSegs := r.containsSeg(s)
+		if someContained {
+			// recvatngle contained at least part of the range
+			if len(newSegs) == 0 {
+				return true // all of orgianl segment was in rectangle, so done
+			} else {
+				for _, newS := range newSegs {
+					isInside := isSegInside(newS.order(), safeRS)
+					if !isInside {
+						return false // if any of segment fragements don't fit, overall seg didn't either
+					}
+				}
+			}
+		}
+	}
+	return false // run out of safe rectabgles but still have a segment to fit
+}
+
+func isSegInside2(fragmentsToCheck []segment, safeRS []rectangle) bool {
+	for _, r := range safeRS {
+		newFrags := []segment{}
+		for _, f := range fragmentsToCheck {
+			_, new := r.containsSeg(f)
+			newFrags = slices.Concat(newFrags, new)
+		}
+		fragmentsToCheck = newFrags
+		if len(fragmentsToCheck) == 0 {
+			return true
+		}
+	}
+	return false // run out of safe rectabgles but still have somefragements to fit
+}
+
+// return false if no part of segemnt is contained in rectangle, or
+// return true with list of 0, 1 or 2 segements, which are fragments of the orgianl segment that were not contained
+// NB seg is interanlly x ordered. make sure returned segs are interally x ordered
+func (r rectangle) containsSeg(s segment) (bool, []segment) {
+	if s.isHorizontal() {
+		// y is either in or out
+		y := s.getHorizontalLinePos()
+		y1 := r.a.y
+		y2 := r.b.y
+		if y1 > y2 {
+			y1, y2 = y2, y1
+		}
+		if !(y >= y1 && y <= y2) {
+			return false, []segment{s}
+		}
+		// only care about the x values in the rectagle for ma,ing chunks
+		x1 := r.a.x
+		x2 := r.b.x
+		if x1 > x2 {
+			panic("rectabgke xs not ordered")
+		}
+		sx1 := s.start.x
+		sx2 := s.end.x
+		if sx1 > sx2 {
+			panic("segment xs not ordered")
+		}
+		anyOverlap, oneDranges := compareRanges(sx1, sx2, x1, x2)
+		segs := []segment{}
+		for _, o := range oneDranges {
+			segs = append(segs, makeSegment(coord{o.a, y}, coord{o.b, y}))
+		}
+		return anyOverlap, segs
+	} else {
+		// x is either in or out
+		x := s.lineX
+		x1 := r.a.x
+		x2 := r.b.x
+		if x1 > x2 {
+			x1, x2 = x2, x1
+		}
+		if !(x >= x1 && x <= x2) {
+			return false, []segment{s}
+		}
+		// only care about the y values in the rectagle
+		y1 := r.a.y
+		y2 := r.b.y
+		if y1 > y2 {
+			panic("rectabgke ys not ordered")
+		}
+		sy1 := s.start.y
+		sy2 := s.end.y
+		if sy1 > sy2 {
+			sy1, sy2 = sy2, sy1
+		}
+		anyOverlap, oneDranges := compareRanges(sy1, sy2, y1, y2)
+		segs := []segment{}
+		for _, o := range oneDranges {
+			segs = append(segs, makeSegment(coord{x, o.a}, coord{x, o.b}))
+		}
+		return anyOverlap, segs
+	}
+}
+
+type oneDRange struct {
+	a int
+	b int
+}
+
+// return segs not included in parant, and if there was any overlap
+func compareRanges(test1, test2, parent1, parent2 int) (bool, []oneDRange) {
+	if test2 < parent1 || test1 > parent2 {
+		// non included
+		return false, []oneDRange{{test1, test2}}
+		// return false, []oneDRange{} // change for 2 mthdos
+	}
+	if test1 >= parent1 && test2 <= parent2 {
+		// all included
+		return true, []oneDRange{}
+	}
+	if test1 >= parent1 && test1 <= parent2 && test2 > parent2 {
+		// will generate one fragement, beyond parent 2
+		return true, []oneDRange{{parent2 + 1, test2}}
+	}
+	if test2 >= parent1 && test2 <= parent2 && test1 < parent1 {
+		// will generate one fragement, before parent 1
+		return true, []oneDRange{{test1, parent1 - 1}}
+	}
+	if test1 < parent1 && test2 > parent2 {
+		// two frgament, on eitehr sid eof th eparents
+		return true, []oneDRange{{parent2 + 1, test2}, {test1, parent1 - 1}}
+	}
+	panic("another case didnt consider")
+}
 
 func checkIfCoordIsOk(c coord, safeRS []rectangle) bool {
 	for _, r := range safeRS {
@@ -362,6 +491,7 @@ func (s segment) isHorizontal() bool {
 	return s.lineY != -1
 }
 
+// Todo, amke x reverse and y reverse, and make order work for both horoizontal and verticla segs, insetad of doi gnoithing for vertical lie now
 func (s segment) order() segment {
 	if s.start.x < s.end.x {
 		return s
