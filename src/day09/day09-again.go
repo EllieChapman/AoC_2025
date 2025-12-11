@@ -20,12 +20,16 @@ func Day9_part2try4(input []string) int {
 }
 
 func loop(segs map[segment]int, accRec []rectangle) []rectangle {
+	// segs = utils.Map(segs, func(s segment) segment { return s.order() }) // to do
+	// fmt.Println("before order len:", len(segs))
+	segs = orderSegMap(segs)
+	// fmt.Println("after order len:", len(segs))
 	topS := findTopHorizontal(segs)
 	left, right := findTopBars(topS, segs)
 	intersecting := findIntersecting(topS, left, right, segs)
-	fmt.Println("intersecting", intersecting)
-	fmt.Println(left, topS, right)
-	fmt.Println("looping, before call removeChunk, len(egs):", len(segs))
+	// fmt.Println("intersecting", intersecting)
+	// fmt.Println(left, topS, right)
+	// fmt.Println("looping, before call removeChunk, len(egs):", len(segs), segs)
 	newsegs, removedInsideChunk := removeChunk(left, topS, right, segs, intersecting)
 	accRec = append(accRec, removedInsideChunk)
 	if len(newsegs) == 0 {
@@ -40,6 +44,14 @@ type segment struct {
 	end   coord
 	lineX int // if a vertical line x is always the same, else -1
 	lineY int // if a horizontal line this is the y coord, if a vertical line (ie y changes) make -1
+}
+
+func orderSegMap(m map[segment]int) map[segment]int {
+	newm := map[segment]int{}
+	for k, _ := range m {
+		newm[k.order()] = 1
+	}
+	return newm
 }
 
 func getLargestPossibleRectangle3(toCheckrs []rectangle, safeRS []rectangle) rectangle {
@@ -96,10 +108,11 @@ func checkIfCoordIsOk(c coord, safeRS []rectangle) bool {
 //	d       | |            | |                            |   |         |   |
 //	e
 func removeChunk(left, top, right segment, segments map[segment]int, intersecting []segment) (map[segment]int, rectangle) {
-	fmt.Println("0")
 	newSegments, rectangleBeingRemoved := createNewSegements(left, top, right, intersecting)
-	fmt.Println("1") // never recahes here
 
+	delete(segments, left.order())
+	delete(segments, top.order())
+	delete(segments, right.order())
 	delete(segments, left)
 	delete(segments, top)
 	delete(segments, right)
@@ -123,9 +136,7 @@ func createNewSegements(left, top, right segment, intersecting []segment) ([]seg
 		lx, rx = rx, lx
 	}
 
-	fmt.Println("2", newTopY)
 	newTopSegments := makeTopSegments(newTopY, lx, rx, intersecting)
-	fmt.Println("3") // never reaches here
 
 	newSegments = slices.Concat(newSegments, newTopSegments)
 	rectangle := rectangle{top.start, coord{rx, newTopY}, 0}
@@ -138,13 +149,14 @@ func createNewSegements(left, top, right segment, intersecting []segment) ([]seg
 
 func makeTopSegments(newTopY, lx, rx int, intersecting []segment) []segment {
 	// EBC todo need to deal with whiole intersect. Intersect includes end coords, but we dont pick up unless one end is wholy within range being considered
-	intersectingCoords := getIntersectingXs(intersecting)
-	// intersects := order(intersecting)
+	// intersectingCoords := getIntersectingXs(intersecting)
+	intersects := order(intersecting)
 
 	if lx > rx {
 		lx, rx = rx, lx
 	}
-	return findNextTop(lx, rx, newTopY, intersectingCoords, []segment{})
+	// return findNextTop(lx, rx, newTopY, intersectingCoords, []segment{})
+	return findNextTopFast(lx, rx, newTopY, intersects, []segment{})
 }
 
 func order(intersecting []segment) []segment {
@@ -163,12 +175,17 @@ func intersectSort(ls []segment) []segment {
 	return ls
 }
 
+// EBC todo broken
 // need interscets to be ordered in list, and start and end for each to be ordered
 func findNextTopFast(lx, rx, ytop int, orderedIntersects []segment, accTops []segment) []segment {
-	fmt.Println("findNextTopFast", lx, rx, ytop)
+	// fmt.Println("findNextTopFast", lx, rx, ytop)
 
 	if len(orderedIntersects) == 0 {
-		return append(accTops, segment{coord{lx, ytop}, coord{rx, ytop}, -1, ytop})
+		if lx < rx {
+			return append(accTops, segment{coord{lx, ytop}, coord{rx, ytop}, -1, ytop})
+		} else {
+			return accTops
+		}
 	}
 	if lx > rx {
 		panic("lx bigger")
@@ -176,10 +193,10 @@ func findNextTopFast(lx, rx, ytop int, orderedIntersects []segment, accTops []se
 	nextIntersectX := orderedIntersects[0].start.x
 	endOfNextIntersect := orderedIntersects[0].end.x
 
-	// if lx == nextIntersectX {
-	// 	// recurse, did not make any
-	// 	return findNextTopFast(endOfNextIntersect, rx, ytop, orderedIntersects[1:], accTops)
-	// }
+	if lx == nextIntersectX {
+		// recurse, did not make any
+		return findNextTopFast(endOfNextIntersect, rx, ytop, orderedIntersects[1:], accTops)
+	}
 	if lx+1 != nextIntersectX {
 		// recurse, found a chunk before next intersect
 		newS := segment{coord{lx, ytop}, coord{nextIntersectX, ytop}, -1, ytop}
@@ -196,44 +213,49 @@ func (s segment) order() segment {
 	return segment{s.end, s.start, s.lineX, s.lineY}
 }
 
-// EBC todo This is just too slow for main, going one by one. Could jump by more if has ordered intersect ranges instead
-func findNextTop(lx, rx, ytop int, intersectXs map[int]bool, accTops []segment) []segment {
-	fmt.Println("findNextTop", lx, rx, ytop)
-	if !(lx < rx-1) {
-		return accTops
-	}
-	tmp := segment{coord{lx, ytop}, coord{lx, ytop}, -1, ytop}
-	for ii := lx + 1; ii < rx; ii++ {
-		_, isIntersecting := intersectXs[ii]
-		if isIntersecting {
-			if tmp.start.x == tmp.end.x {
-				return findNextTop(lx+1, rx, ytop, intersectXs, accTops)
-			} else {
-				return findNextTop(lx+1, rx, ytop, intersectXs, append(accTops, segment{coord{lx, ytop}, coord{ii, ytop}, -1, ytop}))
-			}
-		} else {
-			tmp.end.x = ii
-		}
-	}
-	return findNextTop(rx, rx, ytop, intersectXs, append(accTops, segment{coord{lx, ytop}, coord{rx, ytop}, -1, ytop}))
+func (s segment) reverse() segment {
+	return segment{s.end, s.start, s.lineX, s.lineY}
 }
 
-func getIntersectingXs(intersecting []segment) map[int]bool {
-	xintersects := map[int]bool{}
-	for _, i := range intersecting {
-		s := i.start.x
-		e := i.end.x
-		if i.start.x > i.end.x {
-			s = i.end.x
-			e = i.start.x
-		}
-		for ii := s; ii <= e; ii++ {
-			xintersects[ii] = true
-		}
-	}
-	return xintersects
-}
+// // EBC todo This is just too slow for main, going one by one. Could jump by more if has ordered intersect ranges instead
+// func findNextTop(lx, rx, ytop int, intersectXs map[int]bool, accTops []segment) []segment {
+// 	fmt.Println("findNextTop", lx, rx, ytop)
+// 	if !(lx < rx-1) {
+// 		return accTops
+// 	}
+// 	tmp := segment{coord{lx, ytop}, coord{lx, ytop}, -1, ytop}
+// 	for ii := lx + 1; ii < rx; ii++ {
+// 		_, isIntersecting := intersectXs[ii]
+// 		if isIntersecting {
+// 			if tmp.start.x == tmp.end.x {
+// 				return findNextTop(lx+1, rx, ytop, intersectXs, accTops)
+// 			} else {
+// 				return findNextTop(lx+1, rx, ytop, intersectXs, append(accTops, segment{coord{lx, ytop}, coord{ii, ytop}, -1, ytop}))
+// 			}
+// 		} else {
+// 			tmp.end.x = ii
+// 		}
+// 	}
+// 	return findNextTop(rx, rx, ytop, intersectXs, append(accTops, segment{coord{lx, ytop}, coord{rx, ytop}, -1, ytop}))
+// }
 
+// func getIntersectingXs(intersecting []segment) map[int]bool {
+// 	xintersects := map[int]bool{}
+// 	for _, i := range intersecting {
+// 		s := i.start.x
+// 		e := i.end.x
+// 		if i.start.x > i.end.x {
+// 			s = i.end.x
+// 			e = i.start.x
+// 		}
+// 		for ii := s; ii <= e; ii++ {
+// 			xintersects[ii] = true
+// 		}
+// 	}
+// 	return xintersects
+// }
+
+// return segements (interalluy ordered) if one end is within, or is exact wodth of lx and rx
 // needs to walk down from starting top y, between l and r, find first y that has intersect or pass min or leeft and rigth downness
 func findIntersecting(top, left, right segment, segments map[segment]int) []segment {
 	res := []segment{}
@@ -248,8 +270,8 @@ func findIntersecting(top, left, right segment, segments map[segment]int) []segm
 				if k.getHorizontalLinePos() == y {
 					if k != top {
 						if k.start.x > lx && k.start.x < rx || k.end.x > lx && k.end.x < rx || k.start.x == lx && k.end.x == rx || k.start.x == rx && k.end.x == lx {
-							res = append(res, k)
-							res = append(res, segment{k.end, k.start, k.lineX, k.lineY})
+							res = append(res, k.order())
+							// res = append(res, segment{k.end, k.start, k.lineX, k.lineY})
 						}
 					}
 				}
@@ -351,15 +373,17 @@ func findTopBars(top segment, segments map[segment]int) (segment, segment) {
 				left = k
 			}
 			if k.start == top.start {
-				fmt.Println("need to implement 1") // Todo almost 100%
-				panic("here1")
+				// fmt.Println("need to implement 1") // Todo almost 100%
+				// panic("here1")
+				left = k.order()
 			}
 			if k.start == top.end {
 				right = k
 			}
 			if k.end == top.end {
-				fmt.Println("need to implement 2")
-				panic("here2")
+				// fmt.Println("need to implement 2")
+				// panic("here2")
+				right = k.reverse()
 			}
 		}
 	}
