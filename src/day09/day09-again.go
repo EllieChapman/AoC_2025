@@ -18,8 +18,7 @@ func Day9_part2(input []string) int {
 func loop(segs map[segment]int, accRec []rectangle) []rectangle {
 	topS := findTopHorizontal(segs)
 	left, right := findTopBars(topS, segs)
-	intersecting := findIntersecting(topS, left, right, segs)
-	newsegs, removedInsideChunk := removeChunk(left, topS, right, segs, intersecting)
+	newsegs, removedInsideChunk := removeChunk(left, topS, right, segs)
 	accRec = append(accRec, removedInsideChunk)
 	if len(newsegs) == 0 {
 		return accRec
@@ -162,8 +161,9 @@ func compareRanges(test1, test2, parent1, parent2 int) []oneDRange {
 //	c    _| | | |_      _| | | |_        or         |_ _ _    |    ->    _ _
 //	d       | |            | |                            |   |         |   |
 //	e
-func removeChunk(left, top, right segment, segments map[segment]int, intersecting []segment) (map[segment]int, rectangle) {
-	newSegments, rectangleBeingRemoved := createNewSegements(left, top, right, intersecting)
+func removeChunk(left, top, right segment, segments map[segment]int) (map[segment]int, rectangle) {
+	intersecting, newTopY := findIntersecting(top, left, right, segments)
+	newSegments, rectangleBeingRemoved := createNewSegements(left, top, right, newTopY, intersecting)
 
 	delete(segments, left)
 	delete(segments, top)
@@ -179,9 +179,8 @@ func removeChunk(left, top, right segment, segments map[segment]int, intersectin
 	return segments, rectangleBeingRemoved
 }
 
-func createNewSegements(left, top, right segment, intersecting []segment) ([]segment, rectangle) {
+func createNewSegements(left, top, right segment, newTopY int, intersecting []segment) ([]segment, rectangle) {
 	newSegments := []segment{}
-	newTopY := getNewY(left, right, intersecting)
 	rx := right.getVerticalLinePos()
 	lx := left.getVerticalLinePos()
 
@@ -232,14 +231,16 @@ func findNextTopFast(lx, rx, ytop int, orderedIntersects []segment, accTops []se
 
 // return segements (interalluy ordered) if one end is within, or is exact wodth of lx and rx
 // needs to walk down from starting top y, between l and r, find first y that has intersect or pass min or leeft and rigth downness
-func findIntersecting(top, left, right segment, segments map[segment]int) []segment {
+func findIntersecting(top, left, right segment, segments map[segment]int) ([]segment, int) {
 	res := []segment{}
 	lx := left.start.x
 	rx := right.end.x
 
+	ytop := slices.Min([]int{left.end.y, right.end.y})
+
 	for y := top.start.y; y <= slices.Min([]int{left.end.y, right.end.y}); y++ {
 		if len(res) > 0 {
-			return res
+			return res, ytop
 		}
 		for k, _ := range segments {
 			if k.isHorizontal() {
@@ -247,13 +248,14 @@ func findIntersecting(top, left, right segment, segments map[segment]int) []segm
 					if k != top {
 						if k.start.x > lx && k.start.x < rx || k.end.x > lx && k.end.x < rx || k.start.x == lx && k.end.x == rx || k.start.x == rx && k.end.x == lx {
 							res = append(res, k)
+							ytop = y
 						}
 					}
 				}
 			}
 		}
 	}
-	return res
+	return res, ytop
 }
 
 func makeLeftRigthSegments(left, right segment, newTopY int) []segment {
@@ -266,13 +268,6 @@ func makeLeftRigthSegments(left, right segment, newTopY int) []segment {
 		segments = append(segments, makeSegment(coord{right.start.x, newTopY}, right.end))
 	}
 	return segments
-}
-
-func getNewY(l segment, r segment, intersecting []segment) int {
-	if len(intersecting) > 0 {
-		return intersecting[0].getHorizontalLinePos()
-	}
-	return slices.Min([]int{l.end.y, r.end.y})
 }
 
 func mergeHorizontals(segs map[segment]int) map[segment]int {
