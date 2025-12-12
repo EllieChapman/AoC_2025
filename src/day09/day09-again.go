@@ -11,13 +11,11 @@ func Day9_part2(input []string) int {
 	descendingRecatanglesToCheck := rectangleSort(getRectangles(coords))
 	segments := parseSegements(coords)
 	safeChunks := loop(segments, []rectangle{})
-	// descendingSafeChunks := rectangleSort(safeChunks)
 	r := getLargestPossibleRectangle3(descendingRecatanglesToCheck, safeChunks)
 	return r.area
 }
 
 func loop(segs map[segment]int, accRec []rectangle) []rectangle {
-	segs = orderSegMap(segs)
 	topS := findTopHorizontal(segs)
 	left, right := findTopBars(topS, segs)
 	intersecting := findIntersecting(topS, left, right, segs)
@@ -37,14 +35,6 @@ type segment struct {
 	lineY int // if a horizontal line this is the y coord, if a vertical line (ie y changes) make -1
 }
 
-func orderSegMap(m map[segment]int) map[segment]int {
-	newm := map[segment]int{}
-	for k, _ := range m {
-		newm[k.order()] = 1
-	}
-	return newm
-}
-
 func getLargestPossibleRectangle3(toCheckrs []rectangle, safeRS []rectangle) rectangle {
 	for _, r := range toCheckrs[0:] {
 		if isRectanglePossibleFast(r, safeRS) {
@@ -62,7 +52,7 @@ func isRectanglePossibleFast(r rectangle, safeRS []rectangle) bool {
 	c4 := coord{r.b.x, r.a.y}
 	segsToCheck := []segment{makeSegment(c1, c2), makeSegment(c2, c3), makeSegment(c3, c4), makeSegment(c4, c1)}
 	for _, seg := range segsToCheck {
-		if !isSegInside([]segment{seg.order()}, safeRS) {
+		if !isSegInside([]segment{seg}, safeRS) {
 			return false
 		}
 	}
@@ -73,7 +63,7 @@ func isSegInside(fragmentsToCheck []segment, safeRS []rectangle) bool {
 	for _, r := range safeRS {
 		newFrags := []segment{}
 		for _, f := range fragmentsToCheck {
-			_, new := r.containsSeg(f)
+			new := r.containsSeg(f)
 			newFrags = slices.Concat(newFrags, new)
 		}
 		fragmentsToCheck = newFrags
@@ -84,66 +74,41 @@ func isSegInside(fragmentsToCheck []segment, safeRS []rectangle) bool {
 	return false // run out of safe rectabgles but still have somefragements to fit
 }
 
-// return false if no part of segemnt is contained in rectangle, or
-// return true with list of 0, 1 or 2 segements, which are fragments of the orgianl segment that were not contained
-// NB seg is interanlly x ordered. make sure returned segs are interally x ordered
-func (r rectangle) containsSeg(s segment) (bool, []segment) {
+// return list of 0, 1 or 2 segements, which are fragments of the orgianl segment that were not contained
+// NB needs seg to be ordered
+func (r rectangle) containsSeg(s segment) []segment {
+	y1 := r.a.y
+	y2 := r.b.y
+	x1 := r.a.x
+	x2 := r.b.x
 	if s.isHorizontal() {
 		// y is either in or out
-		y := s.getHorizontalLinePos()
-		y1 := r.a.y
-		y2 := r.b.y
-		if y1 > y2 {
-			y1, y2 = y2, y1
+		test_y := s.getHorizontalLinePos()
+		if !(test_y >= y1 && test_y <= y2) {
+			return []segment{s}
 		}
-		if !(y >= y1 && y <= y2) {
-			return false, []segment{s}
-		}
-		// only care about the x values in the rectagle for ma,ing chunks
-		x1 := r.a.x
-		x2 := r.b.x
-		if x1 > x2 {
-			panic("rectabgke xs not ordered")
-		}
-		sx1 := s.start.x
-		sx2 := s.end.x
-		if sx1 > sx2 {
-			panic("segment xs not ordered")
-		}
-		anyOverlap, oneDranges := compareRanges(sx1, sx2, x1, x2)
+
+		// only care about the x values in the rectagle for making chunks
+		oneDranges := compareRanges(s.start.x, s.end.x, x1, x2)
 		segs := []segment{}
 		for _, o := range oneDranges {
-			segs = append(segs, makeSegment(coord{o.a, y}, coord{o.b, y}))
+			segs = append(segs, makeSegment(coord{o.a, test_y}, coord{o.b, test_y}))
 		}
-		return anyOverlap, segs
+		return segs
 	} else {
 		// x is either in or out
-		x := s.lineX
-		x1 := r.a.x
-		x2 := r.b.x
-		if x1 > x2 {
-			x1, x2 = x2, x1
+		test_x := s.getVerticalLinePos()
+		if !(test_x >= x1 && test_x <= x2) {
+			return []segment{s}
 		}
-		if !(x >= x1 && x <= x2) {
-			return false, []segment{s}
-		}
-		// only care about the y values in the rectagle
-		y1 := r.a.y
-		y2 := r.b.y
-		if y1 > y2 {
-			panic("rectabgke ys not ordered")
-		}
-		sy1 := s.start.y
-		sy2 := s.end.y
-		if sy1 > sy2 {
-			sy1, sy2 = sy2, sy1
-		}
-		anyOverlap, oneDranges := compareRanges(sy1, sy2, y1, y2)
+
+		// only care about the y values in the rectagle for making chunks
+		oneDranges := compareRanges(s.start.y, s.end.y, y1, y2)
 		segs := []segment{}
 		for _, o := range oneDranges {
-			segs = append(segs, makeSegment(coord{x, o.a}, coord{x, o.b}))
+			segs = append(segs, makeSegment(coord{test_x, o.a}, coord{test_x, o.b}))
 		}
-		return anyOverlap, segs
+		return segs
 	}
 }
 
@@ -152,28 +117,28 @@ type oneDRange struct {
 	b int
 }
 
-// return segs not included in parant, and if there was any overlap
-func compareRanges(test1, test2, parent1, parent2 int) (bool, []oneDRange) {
+// return segs not included in parant
+func compareRanges(test1, test2, parent1, parent2 int) []oneDRange {
 	if test2 < parent1 || test1 > parent2 {
-		// non included
-		return false, []oneDRange{{test1, test2}}
+		// non included, so fragemnt is entire orginal segment
+		return []oneDRange{{test1, test2}}
 		// return false, []oneDRange{} // change for 2 mthdos
 	}
 	if test1 >= parent1 && test2 <= parent2 {
-		// all included
-		return true, []oneDRange{}
+		// all included, so no fragmenst to return
+		return []oneDRange{}
 	}
 	if test1 >= parent1 && test1 <= parent2 && test2 > parent2 {
 		// will generate one fragement, beyond parent 2
-		return true, []oneDRange{{parent2 + 1, test2}}
+		return []oneDRange{{parent2 + 1, test2}}
 	}
 	if test2 >= parent1 && test2 <= parent2 && test1 < parent1 {
 		// will generate one fragement, before parent 1
-		return true, []oneDRange{{test1, parent1 - 1}}
+		return []oneDRange{{test1, parent1 - 1}}
 	}
 	if test1 < parent1 && test2 > parent2 {
 		// two frgament, on eitehr sid eof th eparents
-		return true, []oneDRange{{parent2 + 1, test2}, {test1, parent1 - 1}}
+		return []oneDRange{{parent2 + 1, test2}, {test1, parent1 - 1}}
 	}
 	panic("another case didnt consider")
 }
@@ -200,9 +165,6 @@ func compareRanges(test1, test2, parent1, parent2 int) (bool, []oneDRange) {
 func removeChunk(left, top, right segment, segments map[segment]int, intersecting []segment) (map[segment]int, rectangle) {
 	newSegments, rectangleBeingRemoved := createNewSegements(left, top, right, intersecting)
 
-	delete(segments, left.order())
-	delete(segments, top.order())
-	delete(segments, right.order())
 	delete(segments, left)
 	delete(segments, top)
 	delete(segments, right)
@@ -220,13 +182,10 @@ func removeChunk(left, top, right segment, segments map[segment]int, intersectin
 func createNewSegements(left, top, right segment, intersecting []segment) ([]segment, rectangle) {
 	newSegments := []segment{}
 	newTopY := getNewY(left, right, intersecting)
-	rx := right.start.x
-	lx := left.start.x
-	if lx > rx {
-		lx, rx = rx, lx
-	}
+	rx := right.getVerticalLinePos()
+	lx := left.getVerticalLinePos()
 
-	newTopSegments := makeTopSegments(newTopY, lx, rx, intersecting)
+	newTopSegments := findNextTopFast(lx, rx, newTopY, intersectSort(intersecting), []segment{})
 
 	newSegments = slices.Concat(newSegments, newTopSegments)
 	rectangle := calcRectangleSize(top.start, coord{rx, newTopY})
@@ -235,24 +194,6 @@ func createNewSegements(left, top, right segment, intersecting []segment) ([]seg
 	newSegments = slices.Concat(newSegments, leftRightSegs)
 
 	return newSegments, rectangle
-}
-
-func makeTopSegments(newTopY, lx, rx int, intersecting []segment) []segment {
-	intersects := order(intersecting)
-
-	if lx > rx {
-		lx, rx = rx, lx
-	}
-	return findNextTopFast(lx, rx, newTopY, intersects, []segment{})
-}
-
-func order(intersecting []segment) []segment {
-	new := []segment{}
-	for _, i := range intersecting {
-		internallyOrdered := i.order()
-		new = append(new, internallyOrdered)
-	}
-	return intersectSort(new)
 }
 
 func intersectSort(ls []segment) []segment {
@@ -295,10 +236,8 @@ func findIntersecting(top, left, right segment, segments map[segment]int) []segm
 	res := []segment{}
 	lx := left.start.x
 	rx := right.end.x
-	if lx > rx {
-		lx, rx = rx, lx
-	}
-	for y := top.start.y; y <= slices.Min([]int{left.start.y, right.end.y}); y++ {
+
+	for y := top.start.y; y <= slices.Min([]int{left.end.y, right.end.y}); y++ {
 		if len(res) > 0 {
 			return res
 		}
@@ -307,7 +246,7 @@ func findIntersecting(top, left, right segment, segments map[segment]int) []segm
 				if k.getHorizontalLinePos() == y {
 					if k != top {
 						if k.start.x > lx && k.start.x < rx || k.end.x > lx && k.end.x < rx || k.start.x == lx && k.end.x == rx || k.start.x == rx && k.end.x == lx {
-							res = append(res, k.order())
+							res = append(res, k)
 						}
 					}
 				}
@@ -320,8 +259,8 @@ func findIntersecting(top, left, right segment, segments map[segment]int) []segm
 func makeLeftRigthSegments(left, right segment, newTopY int) []segment {
 	// if l/r bar origianlly descends past the newY, then need to create the section of line starting at newY and going down to whre bar origianlly ended
 	segments := []segment{}
-	if left.start.y > newTopY {
-		segments = append(segments, makeSegment(left.start, coord{left.start.x, newTopY}))
+	if left.end.y > newTopY {
+		segments = append(segments, makeSegment(coord{left.start.x, newTopY}, left.end))
 	}
 	if right.end.y > newTopY {
 		segments = append(segments, makeSegment(coord{right.start.x, newTopY}, right.end))
@@ -333,10 +272,7 @@ func getNewY(l segment, r segment, intersecting []segment) int {
 	if len(intersecting) > 0 {
 		return intersecting[0].getHorizontalLinePos()
 	}
-	if l.start.y > r.end.y {
-		return r.end.y
-	}
-	return l.start.y
+	return slices.Min([]int{l.end.y, r.end.y})
 }
 
 func mergeHorizontals(segs map[segment]int) map[segment]int {
@@ -403,17 +339,11 @@ func findTopBars(top segment, segments map[segment]int) (segment, segment) {
 	var right segment
 	for k, _ := range segments {
 		if k.isVertical() {
-			if k.end == top.start {
-				left = k
-			}
 			if k.start == top.start {
-				left = k.order()
+				left = k
 			}
 			if k.start == top.end {
 				right = k
-			}
-			if k.end == top.end {
-				right = k.reverse()
 			}
 		}
 	}
@@ -425,11 +355,20 @@ func findTopBars(top segment, segments map[segment]int) (segment, segment) {
 
 // ======== helpers
 
+// only for horizontal lines, returns the common y pos
 func (s segment) getHorizontalLinePos() int {
 	if s.lineY == -1 {
 		panic("trying to use yline from a vertical coord")
 	}
 	return s.lineY
+}
+
+// only for vertical lines, returns the common x pos
+func (s segment) getVerticalLinePos() int {
+	if s.lineX == -1 {
+		panic("trying to use xline from a vertical coord")
+	}
+	return s.lineX
 }
 
 func (s segment) isVertical() bool {
@@ -440,12 +379,12 @@ func (s segment) isHorizontal() bool {
 	return s.lineY != -1
 }
 
-// Todo, amke x reverse and y reverse, and make order work for both horoizontal and verticla segs, insetad of doi gnoithing for vertical lie now
+// If horizontal, left to right. If vertical, up to down.
 func (s segment) order() segment {
-	if s.start.x < s.end.x {
-		return s
+	if s.isHorizontal() && s.start.x > s.end.x || s.isVertical() && s.start.y > s.end.y {
+		return s.reverse()
 	}
-	return s.reverse()
+	return s
 }
 
 func (s segment) reverse() segment {
@@ -455,7 +394,7 @@ func (s segment) reverse() segment {
 func makeSegment(c1 coord, c2 coord) segment {
 	if c1.x == c2.x {
 		// vertical seg
-		return segment{c1, c2, c1.x, -1}
+		return segment{c1, c2, c1.x, -1}.order()
 	}
 	if c1.y == c2.y {
 		// horizotnal seg

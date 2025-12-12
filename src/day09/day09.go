@@ -23,42 +23,6 @@ type rectangle struct {
 	area int
 }
 
-func getLineCoords(a coord, b coord) []coord {
-	if a.x != b.x && a.y != b.y {
-		panic("line not horizontal or vertical")
-	}
-	if a.x == b.x {
-		if a.y < b.y {
-			return makeVertical(a.x, a.y, b.y)
-		} else {
-			return makeVertical(a.x, b.y, a.y)
-		}
-	} else {
-		if a.x < b.x {
-			return makeHorizontal(a.x, b.x, a.y)
-		} else {
-			return makeHorizontal(b.x, a.x, a.y)
-		}
-	}
-
-}
-
-func makeHorizontal(x1, x2, y int) []coord {
-	cs := []coord{}
-	for x := x1 + 1; x < x2; x++ {
-		cs = append(cs, coord{x, y})
-	}
-	return cs
-}
-
-func makeVertical(x, y1, y2 int) []coord {
-	cs := []coord{}
-	for y := y1 + 1; y < y2; y++ {
-		cs = append(cs, coord{x, y})
-	}
-	return cs
-}
-
 func parse(s string) coord {
 	ss := utils.Map(strings.Split(s, ","), utils.Atoi)
 	return coord{ss[0], ss[1]}
